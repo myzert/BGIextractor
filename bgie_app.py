@@ -5,27 +5,102 @@ import subprocess
 import threading
 import tempfile
 import shutil
+import re
 from PIL import Image
 import customtkinter as ctk
-from tkinter import filedialog, messagebox
 import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
+
+def is_dialog(text):
+    if len(text) < 5 or ".bss" in text or ".mpg" in text or text.isupper(): return False
+    if "_" in text and " " not in text: return False
+    if " " not in text and not re.search(r'[a-z]', text): return False
+    if any(0x3040 <= ord(c) <= 0x309F for c in text): return False
+    return True
+
+class TranslationEditor(ctk.CTkToplevel):
+    def __init__(self, parent, target_file, bss_data):
+        super().__init__(parent)
+        self.title(f"Translation Editor - {target_file}")
+        self.geometry("900x600")
+        self.bss_data = bss_data
+        self.target_file = target_file
+        self.strings = []
+        self.entries = []
+        
+        self.parse_bss()
+        self.setup_ui()
+        
+    def parse_bss(self):
+        data = self.bss_data
+        i = 0
+        while i < len(data) - 4:
+            if data[i:i+4] == b'\x03\x00\x00\x00':
+                start, end = i + 4, i + 4
+                while end < len(data) and data[end] != 0x00: end += 1
+                if end > start:
+                    try:
+                        text = data[start:end].decode('shift_jis')
+                        if is_dialog(text): 
+                            self.strings.append({"offset": start, "original": text, "translated": text})
+                    except: pass
+                i = end
+            else: i += 1
+
+    def setup_ui(self):
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        
+        header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        header_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
+        
+        ctk.CTkLabel(header_frame, text=f"File: {self.target_file}", font=ctk.CTkFont(weight="bold", size=16)).pack(side="left")
+        ctk.CTkButton(header_frame, text="Export as JSON", command=self.save_json, fg_color="#28a745", hover_color="#218838").pack(side="right")
+        
+        if not self.strings:
+            ctk.CTkLabel(self, text="No translatable dialogue found in this file.").grid(row=1, column=0)
+            return
+
+        self.scroll = ctk.CTkScrollableFrame(self)
+        self.scroll.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+        self.scroll.grid_columnconfigure(1, weight=1)
+        
+        for idx, item in enumerate(self.strings):
+            orig_lbl = ctk.CTkLabel(self.scroll, text=item["original"], wraplength=400, justify="left", anchor="w")
+            orig_lbl.grid(row=idx, column=0, padx=10, pady=10, sticky="ew")
+            
+            trans_entry = ctk.CTkTextbox(self.scroll, height=50)
+            trans_entry.insert("1.0", item["translated"])
+            trans_entry.grid(row=idx, column=1, padx=10, pady=10, sticky="ew")
+            self.entries.append(trans_entry)
+
+    def save_json(self):
+        for idx, entry in enumerate(self.entries):
+            self.strings[idx]["translated"] = entry.get("1.0", "end-1c").strip()
+            
+        out_file = filedialog.asksaveasfilename(defaultextension=".json", initialfile=self.target_file.replace(".bss", ".json"), title="Save Translation JSON")
+        if out_file:
+            try:
+                with open(out_file, "w", encoding="utf-8") as f:
+                    json.dump(self.strings, f, ensure_ascii=False, indent=2)
+                messagebox.showinfo("Success", f"Translation saved to {os.path.basename(out_file)}")
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
 
 class BGIExtractorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         
         self.title("BGI Extractor")
-        self.geometry("950x650")
+        self.geometry("1000x700")
         self.resizable(False, False)
 
-        # ---------------- GRID LAYOUT ----------------
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
-        # ---------------- SIDEBAR ----------------
         self.sidebar_frame = ctk.CTkFrame(self, width=220, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=2, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(5, weight=1)
@@ -53,50 +128,40 @@ class BGIExtractorApp(ctk.CTk):
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(self.sidebar_frame, values=["System", "Light", "Dark"], command=self.change_appearance_mode_event)
         self.appearance_mode_optionemenu.grid(row=7, column=0, padx=20, pady=(10, 20))
 
-        # ---------------- MAIN CONTENT ----------------
         self.main_frame = ctk.CTkFrame(self, corner_radius=10, fg_color="transparent")
         self.main_frame.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
         self.main_frame.grid_rowconfigure(0, weight=1)
         self.main_frame.grid_columnconfigure(0, weight=1)
 
-        # Frame Dictionary
         self.frames = {}
         
-        # 1. Viewer Frame
         self.frames["viewer"] = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         self.setup_viewer(self.frames["viewer"])
         
-        # 2. JSON Frame
         self.frames["json"] = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         self.setup_json(self.frames["json"])
         
-        # 3. Inject Frame
         self.frames["inject"] = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         self.setup_inject(self.frames["inject"])
         
-        # 4. Pack Frame
         self.frames["pack"] = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         self.setup_pack(self.frames["pack"])
 
-        # ---------------- LOG BOX ----------------
         self.log_box = ctk.CTkTextbox(self, height=100, corner_radius=5)
         self.log_box.grid(row=1, column=1, sticky="nsew", padx=20, pady=(0, 20))
         self.log("BGI Extractor system initialized.")
 
-        # Default frame
         self.select_frame("viewer")
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         ctk.set_appearance_mode(new_appearance_mode)
 
     def select_frame(self, name):
-        # Reset buttons
         self.btn_viewer.configure(fg_color=["#3B8ED0", "#1F6AA5"] if name == "viewer" else "transparent", text_color=["#ffffff", "#ffffff"] if name == "viewer" else ["gray10", "gray90"])
         self.btn_json.configure(fg_color=["#3B8ED0", "#1F6AA5"] if name == "json" else "transparent", text_color=["#ffffff", "#ffffff"] if name == "json" else ["gray10", "gray90"])
         self.btn_inject.configure(fg_color=["#3B8ED0", "#1F6AA5"] if name == "inject" else "transparent", text_color=["#ffffff", "#ffffff"] if name == "inject" else ["gray10", "gray90"])
         self.btn_pack.configure(fg_color=["#3B8ED0", "#1F6AA5"] if name == "pack" else "transparent", text_color=["#ffffff", "#ffffff"] if name == "pack" else ["gray10", "gray90"])
 
-        # Show frame
         for frame in self.frames.values():
             frame.grid_forget()
         self.frames[name].grid(row=0, column=0, sticky="nsew")
@@ -122,9 +187,6 @@ class BGIExtractorApp(ctk.CTk):
             entry.delete(0, 'end')
             entry.insert(0, file)
 
-    # ---------------- TAB SETUP ----------------
-
-
     def setup_viewer(self, frame):
         ctk.CTkLabel(frame, text="ARC Viewer & Extractor", font=ctk.CTkFont(size=24, weight="bold")).pack(anchor="w", pady=(0, 5))
         ctk.CTkLabel(frame, text="Analyze archive headers or decrypt BGI assets entirely.", text_color="gray").pack(anchor="w", pady=(0, 20))
@@ -136,13 +198,29 @@ class BGIExtractorApp(ctk.CTk):
         ctk.CTkButton(f1, text="Browse", command=lambda: self.browse_file(self.tv_arc), width=80).pack(side="left")
         ctk.CTkButton(f1, text="View Headers", command=self.view_arc, width=120, fg_color="#4da6ff", hover_color="#2b7ec9", text_color="black").pack(side="right")
         
-        self.list_frame = ctk.CTkFrame(frame, height=220)
+        self.list_frame = ctk.CTkFrame(frame, height=250)
         self.list_frame.pack(fill="x", pady=15)
         self.list_frame.pack_propagate(False)
         
-        self.file_listbox = tk.Listbox(self.list_frame, bg="#1a1a1a", fg="white", selectbackground="#3B8ED0", borderwidth=0, highlightthickness=0, font=("Consolas", 11))
-        self.file_listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-        self.file_listbox.bind('<Double-1>', self.preview_file)
+        # Modern Treeview Styling
+        style = ttk.Style()
+        style.theme_use("default")
+        style.configure("Treeview", background="#2b2b2b", foreground="white", fieldbackground="#2b2b2b", borderwidth=0, font=("Helvetica", 11))
+        style.configure("Treeview.Heading", background="#1f1f1f", foreground="white", relief="flat", font=("Helvetica", 11, "bold"))
+        style.map("Treeview", background=[('selected', '#1f6aa5')])
+        
+        self.tree = ttk.Treeview(self.list_frame, columns=("size", "name"), show="headings")
+        self.tree.heading("size", text="Size")
+        self.tree.heading("name", text="File Name")
+        self.tree.column("size", width=100, anchor="e")
+        self.tree.column("name", width=600, anchor="w")
+        
+        scrollbar = ctk.CTkScrollbar(self.list_frame, command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+        
+        self.tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        self.tree.bind('<Double-1>', self.preview_file)
         
         f2 = ctk.CTkFrame(frame, fg_color="transparent")
         f2.pack(fill="x", pady=5)
@@ -155,13 +233,13 @@ class BGIExtractorApp(ctk.CTk):
     def view_arc(self):
         arc_path = self.tv_arc.get()
         if not os.path.exists(arc_path): return messagebox.showerror("Error", "Archive file not found.")
-        self.file_listbox.delete(0, 'end')
+        self.tree.delete(*self.tree.get_children())
         self.arc_files = []
         try:
             with open(arc_path, "rb") as f:
                 header = f.read(12)
                 if header not in (b"BURIKO ARC20", b"PackFile    "):
-                    self.file_listbox.insert("end", "Error: Unrecognized BURIKO signature.")
+                    self.log("Error: Unrecognized BURIKO signature.")
                     return
                 file_count = int.from_bytes(f.read(4), "little")
                 for _ in range(file_count):
@@ -171,17 +249,22 @@ class BGIExtractorApp(ctk.CTk):
                     offset, size = int.from_bytes(f.read(4), "little"), int.from_bytes(f.read(4), "little")
                     if header == b"BURIKO ARC20": f.read(24)
                     else: f.read(8)
-                    self.file_listbox.insert("end", f"[{size} B] {name}")
+                    
+                    # Format size cleanly
+                    size_str = f"{size} B"
+                    if size > 1024*1024: size_str = f"{size/(1024*1024):.2f} MB"
+                    elif size > 1024: size_str = f"{size/1024:.2f} KB"
+                    
+                    self.tree.insert("", "end", values=(size_str, name))
                     self.arc_files.append(name)
-        except Exception as e: self.file_listbox.insert("end", f"I/O Error: {str(e)}")
-        self.log("Archive scanning complete. Double click a file to preview.")
+        except Exception as e: self.log(f"I/O Error: {str(e)}")
+        self.log("Archive scanning complete. Double click a file to preview/edit.")
 
     def preview_file(self, event):
-        selection = self.file_listbox.curselection()
+        selection = self.tree.selection()
         if not selection: return
-        idx = selection[0]
-        if idx >= len(self.arc_files): return
-        target_file = self.arc_files[idx]
+        item = self.tree.item(selection[0])
+        target_file = item['values'][1]
         
         arc_path = self.tv_arc.get()
         import sys
@@ -199,25 +282,39 @@ class BGIExtractorApp(ctk.CTk):
                 return
             ext_path = os.path.join(temp_dir, extracted_files[0])
             
-            prev_win = ctk.CTkToplevel(self)
-            prev_win.title(f"Preview: {target_file}")
-            prev_win.geometry("600x500")
+            # Interactive Editor for BSS
+            if target_file.lower().endswith('.bss'):
+                with open(ext_path, "rb") as f:
+                    bss_data = f.read()
+                editor = TranslationEditor(self, target_file, bss_data)
+                editor.focus()
             
-            if ext_path.lower().endswith(('.png', '.bmp', '.jpg', '.jpeg')):
+            # Image Viewer for graphics
+            elif ext_path.lower().endswith(('.png', '.bmp', '.jpg', '.jpeg', '.cbg')):
+                prev_win = ctk.CTkToplevel(self)
+                prev_win.title(f"Image Viewer - {target_file}")
+                prev_win.geometry("800x600")
                 img = Image.open(ext_path)
-                img.thumbnail((580, 480))
+                
+                # Maintain aspect ratio in viewer
+                img.thumbnail((780, 580))
                 photo = ctk.CTkImage(light_image=img, dark_image=img, size=img.size)
                 lbl = ctk.CTkLabel(prev_win, image=photo, text="")
                 lbl.pack(expand=True, fill="both", padx=10, pady=10)
+            
+            # Fallback Text Viewer
             else:
-                txt = ctk.CTkTextbox(prev_win, wrap="word")
+                prev_win = ctk.CTkToplevel(self)
+                prev_win.title(f"Raw Viewer - {target_file}")
+                prev_win.geometry("600x500")
+                txt = ctk.CTkTextbox(prev_win, wrap="word", font=("Consolas", 12))
                 txt.pack(expand=True, fill="both", padx=10, pady=10)
                 try:
                     with open(ext_path, "r", encoding="shift_jis") as f:
                         txt.insert("1.0", f.read())
                 except:
                     with open(ext_path, "rb") as f:
-                        txt.insert("1.0", str(f.read(2000)))
+                        txt.insert("1.0", str(f.read(3000)) + "\n...[binary truncated]")
                 txt.configure(state="disabled")
                 
         except Exception as e:
@@ -257,13 +354,6 @@ class BGIExtractorApp(ctk.CTk):
     def run_json(self):
         indir, outdir = self.t2_in.get(), self.t2_out.get()
         if not indir or not outdir: return
-        def is_dialog(text):
-            import re
-            if len(text) < 5 or ".bss" in text or ".mpg" in text or text.isupper(): return False
-            if "_" in text and " " not in text: return False
-            if " " not in text and not re.search(r'[a-z]', text): return False
-            if any(0x3040 <= ord(c) <= 0x309F for c in text): return False
-            return True
         count = 0
         os.makedirs(outdir, exist_ok=True)
         for f in os.listdir(indir):
