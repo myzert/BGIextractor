@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "arc.h"
 #include "dsc.h"
@@ -12,7 +13,7 @@
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
-#define makedir(path) mkdir(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+#define makedir(path) mkdir(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH);
 #endif
 
 int main(int argc, char** argv)
@@ -20,10 +21,11 @@ int main(int argc, char** argv)
 	uint32_t i, count;
 	char file_name_with_path[1024] = {0};
 	struct Arc * arc = NULL;
+	char * target_file = NULL;
 	
-	if(argc != 2 && argc != 3)
+	if(argc < 2 || argc > 4)
 	{
-		puts("Usage: a.exe <file.arc> [path]");
+		puts("Usage: a.exe <file.arc> [path] [target_file_name_inside_arc]");
 		return 1;
 	}
 	
@@ -36,20 +38,27 @@ int main(int argc, char** argv)
 	
 	count = arc_files_count(arc);
 	
-	if(argc == 3)
+	if(argc >= 3)
 		makedir(argv[2]);
+		
+	if(argc == 4)
+		target_file = argv[3];
 	
 	printf("number of file: %d\n", count);
 	
 	for(i = 0;i < count;i++)
 	{
+		if (target_file != NULL && strcmp(arc_get_file_name(arc, i), target_file) != 0) {
+			continue;
+		}
+
 		uint8_t * data = NULL;
 		uint8_t * raw_data = arc_get_file_data(arc, i);
 		uint8_t * bse_data = raw_data;
 		uint32_t filesize = arc_get_file_size(arc, i);
 		int good = 1;
 		
-		if(argc == 3)
+		if(argc >= 3)
 			sprintf(file_name_with_path, "%s/%s", argv[2], arc_get_file_name(arc, i));
 		else
 			sprintf(file_name_with_path, "%s", arc_get_file_name(arc, i));
@@ -98,6 +107,8 @@ int main(int argc, char** argv)
 			free(raw_data);
 		if(data != NULL)
 			free(data);
+			
+		if (target_file != NULL) break;
 	}
 	
 	arc_close(arc);

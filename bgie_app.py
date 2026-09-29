@@ -3,8 +3,12 @@ import json
 import struct
 import subprocess
 import threading
+import tempfile
+import shutil
+from PIL import Image
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
+import tkinter as tk
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
@@ -120,6 +124,7 @@ class BGIExtractorApp(ctk.CTk):
 
     # ---------------- TAB SETUP ----------------
 
+
     def setup_viewer(self, frame):
         ctk.CTkLabel(frame, text="ARC Viewer & Extractor", font=ctk.CTkFont(size=24, weight="bold")).pack(anchor="w", pady=(0, 5))
         ctk.CTkLabel(frame, text="Analyze archive headers or decrypt BGI assets entirely.", text_color="gray").pack(anchor="w", pady=(0, 20))
@@ -131,8 +136,13 @@ class BGIExtractorApp(ctk.CTk):
         ctk.CTkButton(f1, text="Browse", command=lambda: self.browse_file(self.tv_arc), width=80).pack(side="left")
         ctk.CTkButton(f1, text="View Headers", command=self.view_arc, width=120, fg_color="#4da6ff", hover_color="#2b7ec9", text_color="black").pack(side="right")
         
-        self.file_list = ctk.CTkTextbox(frame, height=220, state="disabled")
-        self.file_list.pack(fill="x", pady=15)
+        self.list_frame = ctk.CTkFrame(frame, height=220)
+        self.list_frame.pack(fill="x", pady=15)
+        self.list_frame.pack_propagate(False)
+        
+        self.file_listbox = tk.Listbox(self.list_frame, bg="#1a1a1a", fg="white", selectbackground="#3B8ED0", borderwidth=0, highlightthickness=0, font=("Consolas", 11))
+        self.file_listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        self.file_listbox.bind('<Double-1>', self.preview_file)
         
         f2 = ctk.CTkFrame(frame, fg_color="transparent")
         f2.pack(fill="x", pady=5)
@@ -145,29 +155,73 @@ class BGIExtractorApp(ctk.CTk):
     def view_arc(self):
         arc_path = self.tv_arc.get()
         if not os.path.exists(arc_path): return messagebox.showerror("Error", "Archive file not found.")
-        self.file_list.configure(state="normal")
-        self.file_list.delete("1.0", "end")
+        self.file_listbox.delete(0, 'end')
+        self.arc_files = []
         try:
             with open(arc_path, "rb") as f:
                 header = f.read(12)
                 if header not in (b"BURIKO ARC20", b"PackFile    "):
-                    self.file_list.insert("end", "Error: Unrecognized BURIKO signature.")
-                    self.file_list.configure(state="disabled")
+                    self.file_listbox.insert("end", "Error: Unrecognized BURIKO signature.")
                     return
                 file_count = int.from_bytes(f.read(4), "little")
-                self.file_list.insert("end", f"[ARCHIVE METADATA]\nSignature: {header.decode('utf-8', 'ignore')}\nFiles Detected: {file_count}\n\n")
-                for _ in range(min(file_count, 1000)):
+                for _ in range(file_count):
                     name_bytes = f.read(16)
                     name = name_bytes.split(b'\x00')[0].decode('shift_jis', errors='ignore')
                     if header == b"BURIKO ARC20": f.read(80)
                     offset, size = int.from_bytes(f.read(4), "little"), int.from_bytes(f.read(4), "little")
                     if header == b"BURIKO ARC20": f.read(24)
                     else: f.read(8)
-                    self.file_list.insert("end", f"{name.ljust(35)} | Size: {size} bytes\n")
-                if file_count > 1000: self.file_list.insert("end", f"\n... [{file_count - 1000} additional entries hidden] ...\n")
-        except Exception as e: self.file_list.insert("end", f"I/O Error: {str(e)}")
-        self.file_list.configure(state="disabled")
-        self.log("Archive scanning complete.")
+                    self.file_listbox.insert("end", f"[{size} B] {name}")
+                    self.arc_files.append(name)
+        except Exception as e: self.file_listbox.insert("end", f"I/O Error: {str(e)}")
+        self.log("Archive scanning complete. Double click a file to preview.")
+
+    def preview_file(self, event):
+        selection = self.file_listbox.curselection()
+        if not selection: return
+        idx = selection[0]
+        if idx >= len(self.arc_files): return
+        target_file = self.arc_files[idx]
+        
+        arc_path = self.tv_arc.get()
+        import sys
+        base_path = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+        exe_path = os.path.join(base_path, "src", "ethornell.exe" if os.name == 'nt' else "ethornell_linux")
+        if not os.path.exists(exe_path):
+            exe_path = os.path.join(base_path, "ethornell.exe" if os.name == 'nt' else "ethornell_linux")
+            
+        temp_dir = tempfile.mkdtemp()
+        try:
+            subprocess.run([exe_path, arc_path, temp_dir, target_file], check=True, stdout=subprocess.DEVNULL)
+            extracted_files = os.listdir(temp_dir)
+            if not extracted_files:
+                messagebox.showerror("Preview Error", "File extraction failed.")
+                return
+            ext_path = os.path.join(temp_dir, extracted_files[0])
+            
+            prev_win = ctk.CTkToplevel(self)
+            prev_win.title(f"Preview: {target_file}")
+            prev_win.geometry("600x500")
+            
+            if ext_path.lower().endswith(('.png', '.bmp', '.jpg', '.jpeg')):
+                img = Image.open(ext_path)
+                img.thumbnail((580, 480))
+                photo = ctk.CTkImage(light_image=img, dark_image=img, size=img.size)
+                lbl = ctk.CTkLabel(prev_win, image=photo, text="")
+                lbl.pack(expand=True, fill="both", padx=10, pady=10)
+            else:
+                txt = ctk.CTkTextbox(prev_win, wrap="word")
+                txt.pack(expand=True, fill="both", padx=10, pady=10)
+                try:
+                    with open(ext_path, "r", encoding="shift_jis") as f:
+                        txt.insert("1.0", f.read())
+                except:
+                    with open(ext_path, "rb") as f:
+                        txt.insert("1.0", str(f.read(2000)))
+                txt.configure(state="disabled")
+                
+        except Exception as e:
+            messagebox.showerror("Preview Error", str(e))
 
     def run_extract(self):
         arc_file, out_dir = self.tv_arc.get(), self.tv_out.get()
