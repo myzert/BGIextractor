@@ -17,19 +17,16 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install customtkinter pyinstaller
-    - name: Build EXE with PyInstaller
+    - name: Build Standalone EXE
       run: |
-        pyinstaller --noconfirm --onedir --windowed --name "BGIExtractor-Win64" --add-data "src;src" bgie_app.py
-    # Zip the output so it's a single file for the release
-    - name: Zip the build
-      run: Compress-Archive -Path dist\BGIExtractor-Win64 -DestinationPath BGIExtractor-Windows.zip
+        pyinstaller --noconfirm --onefile --windowed --name "BGIExtractor-Win64" --add-data "src;src" bgie_app.py
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: BGIExtractor-Windows
-        path: BGIExtractor-Windows.zip
+        name: BGIExtractor-Win64.exe
+        path: dist/BGIExtractor-Win64.exe
 
-  build-linux:
+  build-linux-deb:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -41,48 +38,56 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install customtkinter pyinstaller
-    - name: Build Linux Binary with PyInstaller
+    - name: Build Linux Binary
       run: |
-        pyinstaller --noconfirm --onedir --windowed --name "BGIExtractor-Linux" --add-data "src:src" bgie_app.py
-    # Tar the output for the release
-    - name: Tar the build
-      run: tar -czvf BGIExtractor-Linux.tar.gz -C dist BGIExtractor-Linux
+        pyinstaller --noconfirm --onefile --windowed --name "bgiextractor" --add-data "src:src" bgie_app.py
+    - name: Package into DEB
+      run: |
+        mkdir -p package/usr/bin
+        mkdir -p package/DEBIAN
+        cp dist/bgiextractor package/usr/bin/
+        chmod +x package/usr/bin/bgiextractor
+        cat << 'CTRL' > package/DEBIAN/control
+        Package: bgiextractor
+        Version: 1.0.0
+        Section: utils
+        Priority: optional
+        Architecture: amd64
+        Maintainer: myzert <zerttcihuy@gmail.com>
+        Description: BGIE (BGI Extractor) Pro
+         Open-Source ARC Unpacker, Viewer & JSON Translation Toolkit.
+        CTRL
+        dpkg-deb --build package bgiextractor_1.0.0_amd64.deb
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: BGIExtractor-Linux
-        path: BGIExtractor-Linux.tar.gz
+        name: bgiextractor_1.0.0_amd64.deb
+        path: bgiextractor_1.0.0_amd64.deb
 
   create-release:
-    needs: [build-windows, build-linux]
+    needs: [build-windows, build-linux-deb]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: BGIExtractor-Windows
+          name: BGIExtractor-Win64.exe
       - uses: actions/download-artifact@v4
         with:
-          name: BGIExtractor-Linux
+          name: bgiextractor_1.0.0_amd64.deb
       - name: Create or Update Latest Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: "🔥 BGIE Pro - Latest Auto-Build"
           body: |
-            ## 🚀 BGIE (BGI Extractor) Pro - Latest Update
-            This release is automatically compiled by GitHub Actions from the latest source code.
+            ## 🚀 BGIE (BGI Extractor) Pro
+            This release is automatically compiled by GitHub Actions.
             
-            ### 🌟 Features in this build:
-            - **Modern CustomTkinter UI** (Dark Mode, Sleek components)
-            - **Live ARC Viewer** (Read archive headers and inspect contents before extracting)
-            - **Safe BSS Auto-Padding Injector** (Prevents engine crashes when translating)
-            - **DSC Decryptor Included** (ethornell C-engine compiled and embedded)
-            
-            ### 📥 Download Instructions:
-            - **Windows Users**: Download `BGIExtractor-Windows.zip`, extract it, and run `BGIExtractor-Win64.exe`.
-            - **Linux Users**: Download `BGIExtractor-Linux.tar.gz`, extract it, and run the Linux executable.
+            ### 📥 Downloads:
+            - **Windows**: Download `BGIExtractor-Win64.exe` below. It is a portable standalone executable (no installation required).
+            - **Linux**: Download `bgiextractor_1.0.0_amd64.deb` below and install it using `sudo dpkg -i bgiextractor_1.0.0_amd64.deb`.
           files: |
-            BGIExtractor-Windows.zip
-            BGIExtractor-Linux.tar.gz
+            BGIExtractor-Win64.exe
+            bgiextractor_1.0.0_amd64.deb
