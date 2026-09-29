@@ -1,9 +1,7 @@
-name: Build BGIE Executables
+name: Build and Release BGIE
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
     branches: [ "main" ]
 
 jobs:
@@ -21,12 +19,15 @@ jobs:
         pip install customtkinter pyinstaller
     - name: Build EXE with PyInstaller
       run: |
-        pyinstaller --noconfirm --onedir --windowed --name "BGIExtractor" --add-data "src;src" bgie_app.py
-    - name: Upload Windows Build
+        pyinstaller --noconfirm --onedir --windowed --name "BGIExtractor-Win64" --add-data "src;src" bgie_app.py
+    # Zip the output so it's a single file for the release
+    - name: Zip the build
+      run: Compress-Archive -Path dist\BGIExtractor-Win64 -DestinationPath BGIExtractor-Windows.zip
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: BGIExtractor-Windows
-        path: dist/BGIExtractor
+        path: BGIExtractor-Windows.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -42,9 +43,46 @@ jobs:
         pip install customtkinter pyinstaller
     - name: Build Linux Binary with PyInstaller
       run: |
-        pyinstaller --noconfirm --onedir --windowed --name "BGIExtractor" --add-data "src:src" bgie_app.py
-    - name: Upload Linux Build
+        pyinstaller --noconfirm --onedir --windowed --name "BGIExtractor-Linux" --add-data "src:src" bgie_app.py
+    # Tar the output for the release
+    - name: Tar the build
+      run: tar -czvf BGIExtractor-Linux.tar.gz -C dist BGIExtractor-Linux
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: BGIExtractor-Linux
-        path: dist/BGIExtractor
+        path: BGIExtractor-Linux.tar.gz
+
+  create-release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: BGIExtractor-Windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: BGIExtractor-Linux
+      - name: Create or Update Latest Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "🔥 BGIE Pro - Latest Auto-Build"
+          body: |
+            ## 🚀 BGIE (BGI Extractor) Pro - Latest Update
+            This release is automatically compiled by GitHub Actions from the latest source code.
+            
+            ### 🌟 Features in this build:
+            - **Modern CustomTkinter UI** (Dark Mode, Sleek components)
+            - **Live ARC Viewer** (Read archive headers and inspect contents before extracting)
+            - **Safe BSS Auto-Padding Injector** (Prevents engine crashes when translating)
+            - **DSC Decryptor Included** (ethornell C-engine compiled and embedded)
+            
+            ### 📥 Download Instructions:
+            - **Windows Users**: Download `BGIExtractor-Windows.zip`, extract it, and run `BGIExtractor-Win64.exe`.
+            - **Linux Users**: Download `BGIExtractor-Linux.tar.gz`, extract it, and run the Linux executable.
+          files: |
+            BGIExtractor-Windows.zip
+            BGIExtractor-Linux.tar.gz
