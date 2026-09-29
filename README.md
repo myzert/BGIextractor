@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🔥 BGIE (BGI Extractor) Pro
+# BGI Extractor
 
 [![Build Status](https://github.com/myzert/BGIextractor/actions/workflows/build.yml/badge.svg)](https://github.com/myzert/BGIextractor/actions)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -8,91 +8,89 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](#)
 [![Theme](https://img.shields.io/badge/UI-CustomTkinter-blueviolet)](#)
 
-*The Ultimate Open-Source Toolset for SMEE / Ethornell Visual Novel Modding*
+*A comprehensive open-source toolset for BGI / Ethornell Engine modding and localization.*
 
 </div>
 
 <hr>
 
-## 📖 Table of Contents
-- [About the Project](#-about-the-project)
-- [Key Features](#-key-features)
-- [Built With](#-built-with)
-- [Installation / Downloads](#-installation)
-- [Usage Guide](#-usage-guide)
-- [Important Notes & Warnings](#-important-notes)
-- [Contributing](#-contributing)
-- [License](#-license)
+## Table of Contents
+- [About the Project](#about-the-project)
+- [Features](#features)
+- [Built With](#built-with)
+- [Installation](#installation)
+- [Usage Guide](#usage-guide)
+- [Technical Constraints](#technical-constraints)
+- [Contributing](#contributing)
+- [License](#license)
 
-## 📌 About the Project
+## About the Project
 
-**BGIE** (formerly BGI Translation Toolkit) is a professional, open-source software suite designed to empower the visual novel localization community. It allows translators and modders to unpack, decrypt, translate, and repack assets from visual novels running on the **BGI / Ethornell Engine** (commonly used by developers like SMEE, ASa Project, and August).
+**BGI Extractor** is an open-source software suite designed to assist software localization teams. It provides a robust framework to unpack, decrypt, translate, and rebuild assets from applications running on the **BGI / Ethornell Engine** (utilized by developers such as SMEE, ASa Project, and August).
 
-Traditional tools often crash the game when text is translated due to broken byte pointers. BGIE solves this by implementing a **smart Auto-Padding JSON Injector** that ensures the compiled bytecode `.bss` remains perfectly stable.
+By implementing a calculated byte-padding injection system, BGI Extractor ensures that memory offsets within compiled `.bss` files remain stable, effectively mitigating engine crashes caused by shifted pointers during text modification.
 
-## ✨ Key Features
+## Features
 
-- **Built-in Archive Viewer:** Read `BURIKO ARC20` internal headers and list all files inside `.arc` archives instantly, without having to extract them first.
-- **Modern GUI Client:** A sleek, dark-themed user interface powered by `CustomTkinter`. No terminal commands required!
-- **DSC Decryption Engine:** Includes a lightning-fast C-based engine capable of ripping through obfuscated scripts and decompressed `.CBG` visual assets.
-- **Smart BSS ↔ JSON Converter:** Automatically isolates dialog strings from compiled `.bss` bytecode and exports them into human-readable `.json` arrays.
-- **Crash-Proof Injector:** Safely re-insert translated text. BGIE adjusts string sizes and applies space-padding so memory offsets match the original Japanese text length exactly.
-- **ARC Builder:** Compile your modified `.bss` scripts and edited images back into a fresh `.arc` archive in a single click.
+- **Archive Viewer:** Read `BURIKO ARC20` headers and inspect internal file structures without performing full extraction.
+- **Graphical Interface:** A modular, multi-platform graphical client utilizing `CustomTkinter`.
+- **DSC Decryption:** Integrates the highly efficient C-based `ethornell` engine for decompression and obfuscation removal.
+- **BSS to JSON Converter:** Parses `.bss` bytecode to isolate dialogue strings, exporting them into structured `.json` format for localization teams.
+- **Padding Injector:** Reconstructs patched `.bss` files by inserting translated strings. Implements strict length matching (space-padding) to preserve architectural integrity.
+- **ARC Compiler:** Packages modified assets and scripts into functional `.arc` archives recognized by the original engine.
 
-## 🛠 Built With
+## Built With
 
-This project relies on the following open-source technologies:
-- **[Python](https://www.python.org/)** - Core logic and scripting backend.
-- **[CustomTkinter](https://github.com/TomSchimansky/CustomTkinter)** - Modern, customizable UI library.
-- **[C / GCC](https://gcc.gnu.org/)** - For the high-speed DSC decryption logic and extraction.
-- **[GitHub Actions](https://github.com/features/actions)** - CI/CD pipeline for automated `.exe` and `.deb` packaging.
+- **[Python](https://www.python.org/)** - Core application logic.
+- **[CustomTkinter](https://github.com/TomSchimansky/CustomTkinter)** - User interface framework.
+- **[C / GCC](https://gcc.gnu.org/)** - Core DSC decryption layer.
+- **[GitHub Actions](https://github.com/features/actions)** - CI/CD deployment pipeline.
 
-## 📥 Installation
+## Installation
 
-You do not need to install Python if you are using the pre-compiled binaries!
+Standalone executables are automatically generated via GitHub Actions. Python installation is not required when using the provided binaries.
 
 ### Windows
-1. Go to the [Releases Tab](https://github.com/myzert/BGIextractor/releases) and download **`BGIExtractor-Win64.exe`**.
-2. Run the standalone `.exe` directly (No installation required).
+1. Navigate to the [Releases](https://github.com/myzert/BGIextractor/releases) page.
+2. Download **`BGIExtractor-Win64.exe`**.
+3. Execute the binary directly (Portable software).
 
 ### Linux (Debian / Ubuntu)
-1. Go to the [Releases Tab](https://github.com/myzert/BGIextractor/releases) and download **`bgiextractor_1.0.0_amd64.deb`**.
-2. Install the package via terminal:
+1. Navigate to the [Releases](https://github.com/myzert/BGIextractor/releases) page.
+2. Download the `.deb` package (e.g., `bgiextractor_1.0.0_amd64.deb`).
+3. Install using dpkg:
    ```bash
    sudo dpkg -i bgiextractor_1.0.0_amd64.deb
    ```
-3. Run `bgiextractor` from your terminal or application launcher.
 
-*(If you prefer to run from source, simply clone the repo and double-click `Launcher.bat` or `Launcher.sh`).*
+*(To run the application from source, execute `Launcher.bat` on Windows or `Launcher.sh` on Linux environments).*
 
-## 🎮 Usage Guide
+## Usage Guide
 
-1. **ARC Viewer & Extractor:** Browse for an `.arc` file to inspect its contents. Pick an output folder and click *Extract All* to unpack and decrypt the DSC files.
-2. **Text to JSON:** Select the folder containing your newly decrypted `.bss` scripts. BGIE will extract all dialogue strings into `.json` files for your translation team.
-3. **JSON Injector:** Once translation is done, point the tool at the original `.bss` files and your translated `.json` folder. BGIE will automatically generate patched, game-ready `.bss` files.
-4. **ARC Builder:** Compile your patched files into an `.arc` file (e.g., `data01099.arc.new`). Drop this into your game folder to see your translations in-game!
+1. **ARC Viewer & Extractor:** Select an `.arc` archive to parse its contents. Provide an output directory and initiate extraction to decrypt associated DSC files.
+2. **Text to JSON:** Specify the directory containing decrypted `.bss` scripts. The application will isolate translatable arrays and output them as `.json`.
+3. **JSON Injector:** Provide the original `.bss` files alongside the modified `.json` documents. The system will compile and pad the patched `.bss` outputs.
+4. **ARC Builder:** Designate the patched directory to compile the files into a standard `.arc` archive format.
 
-## ⚠️ Important Notes
+## Technical Constraints
 
 > [!WARNING]
-> **Bytecode Length Constraints**
-> The BGI Engine is extremely sensitive to bytecode shifts. Our injector currently pads translated text with spaces (`\x20`) if the English translation is shorter than the Japanese text. If your translation is *longer* than the Japanese text, the tool will **truncate** it to prevent engine crashes. We recommend using concise translations or abbreviations for long sentences.
+> **Bytecode Offset Limitations**
+> The engine is strictly constrained by original bytecode allocation. If a translated string is shorter than the source text, the application automatically pads it with spaces (`\x20`). Conversely, if a translation exceeds the original length, it will be **truncated**. Localization teams are advised to adhere to length limitations to maintain stability.
 
-## 🤝 Contributing
+## Contributing
 
-Contributions make the open-source community an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+We welcome contributions from the community. To submit a patch or feature:
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. Fork the Repository.
+2. Create a Feature Branch (`git checkout -b feature/ImplementationName`).
+3. Commit your changes (`git commit -m 'feat: Add ImplementationName'`).
+4. Push to the Branch (`git push origin feature/ImplementationName`).
+5. Open a Pull Request.
 
-## 📄 License
+## License
 
-Distributed under the **GNU General Public License v3.0 (GPLv3)**. See `LICENSE` for more information. You are free to modify, distribute, and contribute to this project to help localize visual novels worldwide!
+This software is distributed under the **GNU General Public License v3.0 (GPLv3)**. Please review the `LICENSE` file for full terms and conditions.
 
 ---
-<div align="center">
-  <p>Made with ❤️ for the VN Translation Community by <b>myzert</b>.</p>
-</div>
+*Maintained by myzert.*

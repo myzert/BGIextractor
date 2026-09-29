@@ -54,7 +54,7 @@ jobs:
         Priority: optional
         Architecture: amd64
         Maintainer: myzert <zerttcihuy@gmail.com>
-        Description: BGIE (BGI Extractor) Pro
+        Description: BGI Extractor
          Open-Source ARC Unpacker, Viewer & JSON Translation Toolkit.
         CTRL
         dpkg-deb --build package bgiextractor_1.0.0_amd64.deb
@@ -80,9 +80,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: "BGIE Pro - Latest Auto-Build"
+          name: "BGI Extractor - Latest Release"
           body: |
-            ## BGIE (BGI Extractor) Pro
+            ## BGI Extractor
             This release is automatically compiled by GitHub Actions.
             
             ### Downloads:

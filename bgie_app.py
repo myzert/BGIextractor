@@ -14,15 +14,15 @@ ctk.set_default_color_theme("blue")
 class BGIExtractorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("BGIE (BGI Extractor) Pro - by myzert")
+        self.title("BGI Extractor")
         self.geometry("900x650")
         self.resizable(False, False)
         
         # Header
-        self.header = ctk.CTkLabel(self, text="BGIE (BGI Extractor)", font=ctk.CTkFont(size=28, weight="bold"), text_color="#3a7ebf")
+        self.header = ctk.CTkLabel(self, text="BGI Extractor", font=ctk.CTkFont(size=28, weight="bold"), text_color="#3a7ebf")
         self.header.pack(pady=(20, 5))
         
-        self.subheader = ctk.CTkLabel(self, text="Open-Source ARC Unpacker, Viewer & JSON Translation Toolkit", font=ctk.CTkFont(size=14, slant="italic"), text_color="gray")
+        self.subheader = ctk.CTkLabel(self, text="ARC Extraction and Bytecode Injection Toolkit", font=ctk.CTkFont(size=14, slant="italic"), text_color="gray")
         self.subheader.pack(pady=(0, 15))
         
         # Tabs
@@ -42,7 +42,7 @@ class BGIExtractorApp(ctk.CTk):
         # Log Box
         self.log_box = ctk.CTkTextbox(self, height=120, state="disabled", fg_color="#1a1a1a", text_color="#4da6ff")
         self.log_box.pack(padx=20, pady=(0, 20), fill="x")
-        self.log("Welcome to BGIE Pro.")
+        self.log("BGI Extractor initialized.")
         
     def log(self, text):
         self.log_box.configure(state="normal")
