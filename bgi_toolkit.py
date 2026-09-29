@@ -2,62 +2,55 @@ import os
 import json
 import subprocess
 import threading
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from tkinter.scrolledtext import ScrolledText
+import customtkinter as ctk
+from tkinter import filedialog, messagebox
 
-class BgiToolkitApp(tk.Tk):
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("blue")
+
+class BgiToolkitApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("BGI Translation Toolkit Pro - by myzert")
-        self.geometry("650x550")
-        self.configure(padx=10, pady=10)
-        self.style = ttk.Style(self)
-        self.style.theme_use('clam')
+        self.title("BGI Translation Toolkit Pro")
+        self.geometry("750x600")
+        self.resizable(False, False)
         
         # Header
-        header_frame = ttk.Frame(self)
-        header_frame.pack(fill='x', pady=(0, 10))
-        ttk.Label(header_frame, text="BGI Engine Translation Toolkit", font=("Helvetica", 16, "bold")).pack()
-        ttk.Label(header_frame, text="Ultimate Solution for SMEE / Ethornell Visual Novels", font=("Helvetica", 10)).pack()
+        self.header = ctk.CTkLabel(self, text="BGI Engine Translation Toolkit", font=ctk.CTkFont(size=24, weight="bold"))
+        self.header.pack(pady=(20, 5))
         
-        tab_control = ttk.Notebook(self)
+        self.subheader = ctk.CTkLabel(self, text="Professional Extractor, Decompiler, and Injector by myzert", font=ctk.CTkFont(size=13, slant="italic"), text_color="gray")
+        self.subheader.pack(pady=(0, 20))
         
-        # Tabs
-        tab1 = ttk.Frame(tab_control, padding=10)
-        tab_control.add(tab1, text='1. ARC Extractor')
-        self.setup_tab_extract(tab1)
+        # Tab View
+        self.tabview = ctk.CTkTabview(self, width=700, height=350)
+        self.tabview.pack(padx=20, pady=10, fill="both", expand=True)
         
-        tab2 = ttk.Frame(tab_control, padding=10)
-        tab_control.add(tab2, text='2. BSS Decompiler (JSON)')
-        self.setup_tab_json(tab2)
+        self.tabview.add("1. ARC Extractor")
+        self.tabview.add("2. BSS to JSON")
+        self.tabview.add("3. JSON to BSS")
+        self.tabview.add("4. ARC Repacker")
         
-        tab3 = ttk.Frame(tab_control, padding=10)
-        tab_control.add(tab3, text='3. BSS Injector')
-        self.setup_tab_inject(tab3)
+        self.setup_tab_extract()
+        self.setup_tab_json()
+        self.setup_tab_inject()
+        self.setup_tab_pack()
         
-        tab4 = ttk.Frame(tab_control, padding=10)
-        tab_control.add(tab4, text='4. ARC Repacker')
-        self.setup_tab_pack(tab4)
+        # Log Box
+        self.log_box = ctk.CTkTextbox(self, height=100, state="disabled")
+        self.log_box.pack(padx=20, pady=(0, 20), fill="x")
+        self.log("Welcome to BGI Toolkit Pro. The ultimate UI client.")
         
-        tab_control.pack(expand=1, fill='both')
-
-        # Status Log
-        self.log_area = ScrolledText(self, height=8, state='disabled', bg='#f4f4f4')
-        self.log_area.pack(fill='x', pady=(10, 0))
-        self.log("Welcome to BGI Translation Toolkit Pro.")
-        self.log("Designed to prevent crashes using safe auto-padding injection.")
-
-    def log(self, msg):
-        self.log_area.config(state='normal')
-        self.log_area.insert(tk.END, msg + "\n")
-        self.log_area.see(tk.END)
-        self.log_area.config(state='disabled')
-
+    def log(self, text):
+        self.log_box.configure(state="normal")
+        self.log_box.insert("end", text + "\n")
+        self.log_box.see("end")
+        self.log_box.configure(state="disabled")
+        
     def browse_folder(self, entry):
         folder = filedialog.askdirectory()
         if folder:
-            entry.delete(0, tk.END)
+            entry.delete(0, 'end')
             entry.insert(0, folder)
             
     def browse_file(self, entry, save=False, ext=".arc"):
@@ -66,62 +59,54 @@ class BgiToolkitApp(tk.Tk):
         else:
             file = filedialog.askopenfilename(filetypes=[("ARC Files", "*.arc"), ("All Files", "*.*")])
         if file:
-            entry.delete(0, tk.END)
+            entry.delete(0, 'end')
             entry.insert(0, file)
 
-    # ---------------- TAB 1: EXTRACT ----------------
-    def setup_tab_extract(self, tab):
-        ttk.Label(tab, text="Unpack .arc archives and decrypt DSC FORMAT 1.00", font=("Helvetica", 10, "italic")).pack(anchor='w', pady=(0, 10))
+    def setup_tab_extract(self):
+        tab = self.tabview.tab("1. ARC Extractor")
         
-        ttk.Label(tab, text="Target .arc File:").pack(anchor='w')
-        self.t1_arc = ttk.Entry(tab, width=60)
-        self.t1_arc.pack(anchor='w', pady=2)
-        ttk.Button(tab, text="Browse File", command=lambda: self.browse_file(self.t1_arc)).pack(anchor='w', pady=(0, 10))
+        ctk.CTkLabel(tab, text="Unpack .arc archives and decrypt DSC FORMAT 1.00", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=20, pady=(10, 20))
         
-        ttk.Label(tab, text="Output Folder:").pack(anchor='w')
-        self.t1_out = ttk.Entry(tab, width=60)
-        self.t1_out.pack(anchor='w', pady=2)
-        ttk.Button(tab, text="Browse Folder", command=lambda: self.browse_folder(self.t1_out)).pack(anchor='w', pady=(0, 10))
+        self.t1_arc = ctk.CTkEntry(tab, placeholder_text="Target .arc File", width=400)
+        self.t1_arc.pack(pady=5)
+        ctk.CTkButton(tab, text="Browse File", command=lambda: self.browse_file(self.t1_arc)).pack(pady=5)
         
-        ttk.Button(tab, text="Extract & Decrypt", command=self.run_extract, width=20).pack(pady=20)
+        self.t1_out = ctk.CTkEntry(tab, placeholder_text="Output Folder", width=400)
+        self.t1_out.pack(pady=(15, 5))
+        ctk.CTkButton(tab, text="Browse Folder", command=lambda: self.browse_folder(self.t1_out)).pack(pady=5)
+        
+        ctk.CTkButton(tab, text="▶ Extract & Decrypt", command=self.run_extract, fg_color="green", hover_color="darkgreen").pack(pady=30)
 
     def run_extract(self):
-        arc_file = self.t1_arc.get()
-        out_dir = self.t1_out.get()
+        arc_file, out_dir = self.t1_arc.get(), self.t1_out.get()
         if not arc_file or not out_dir: return messagebox.showerror("Error", "Fill all fields!")
-        
         exe_name = "ethornell.exe" if os.name == 'nt' else "./ethornell_linux"
         exe_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), exe_name)
+        if not os.path.exists(exe_path): return messagebox.showerror("Error", f"Core extractor '{exe_name}' not found!")
         
-        if not os.path.exists(exe_path):
-            return messagebox.showerror("Error", f"Core extractor '{exe_name}' not found!")
-            
         def task():
-            self.log(f"Starting extraction for {os.path.basename(arc_file)}...")
+            self.log(f"Extracting {os.path.basename(arc_file)}...")
             os.makedirs(out_dir, exist_ok=True)
             try:
                 subprocess.run([exe_path, arc_file, out_dir], check=True)
                 self.log("Extraction completed successfully!")
             except Exception as e:
                 self.log(f"Extraction failed: {str(e)}")
-        
         threading.Thread(target=task).start()
 
-    # ---------------- TAB 2: DECOMPILE (JSON) ----------------
-    def setup_tab_json(self, tab):
-        ttk.Label(tab, text="Extract dialogue strings from decrypted .bss files into JSON", font=("Helvetica", 10, "italic")).pack(anchor='w', pady=(0, 10))
+    def setup_tab_json(self):
+        tab = self.tabview.tab("2. BSS to JSON")
+        ctk.CTkLabel(tab, text="Extract dialogue strings from decrypted .bss files into JSON", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=20, pady=(10, 20))
         
-        ttk.Label(tab, text="Input Folder (Extracted .bss files):").pack(anchor='w')
-        self.t2_in = ttk.Entry(tab, width=60)
-        self.t2_in.pack(anchor='w', pady=2)
-        ttk.Button(tab, text="Browse", command=lambda: self.browse_folder(self.t2_in)).pack(anchor='w', pady=(0, 10))
+        self.t2_in = ctk.CTkEntry(tab, placeholder_text="Input Folder (Extracted .bss files)", width=400)
+        self.t2_in.pack(pady=5)
+        ctk.CTkButton(tab, text="Browse Folder", command=lambda: self.browse_folder(self.t2_in)).pack(pady=5)
         
-        ttk.Label(tab, text="Output Folder (For .json translation files):").pack(anchor='w')
-        self.t2_out = ttk.Entry(tab, width=60)
-        self.t2_out.pack(anchor='w', pady=2)
-        ttk.Button(tab, text="Browse", command=lambda: self.browse_folder(self.t2_out)).pack(anchor='w', pady=(0, 10))
+        self.t2_out = ctk.CTkEntry(tab, placeholder_text="Output Folder (For .json files)", width=400)
+        self.t2_out.pack(pady=(15, 5))
+        ctk.CTkButton(tab, text="Browse Folder", command=lambda: self.browse_folder(self.t2_out)).pack(pady=5)
         
-        ttk.Button(tab, text="Generate JSON Files", command=self.run_json, width=20).pack(pady=20)
+        ctk.CTkButton(tab, text="▶ Generate JSON Files", command=self.run_json, fg_color="blue", hover_color="darkblue").pack(pady=30)
 
     def run_json(self):
         indir, outdir = self.t2_in.get(), self.t2_out.get()
@@ -143,7 +128,6 @@ class BgiToolkitApp(tk.Tk):
         for f in os.listdir(indir):
             bss_file = os.path.join(indir, f)
             if not os.path.isfile(bss_file): continue
-            
             with open(bss_file, "rb") as bf: data = bf.read()
             strings, i = [], 0
             while i < len(data) - 4:
@@ -160,31 +144,27 @@ class BgiToolkitApp(tk.Tk):
                 else: i += 1
             if strings:
                 json_path = os.path.join(outdir, f.replace(".bss", "").replace(".txt", "") + ".json")
-                with open(json_path, "w", encoding="utf-8") as jf:
-                    json.dump(strings, jf, ensure_ascii=False, indent=2)
+                with open(json_path, "w", encoding="utf-8") as jf: json.dump(strings, jf, ensure_ascii=False, indent=2)
                 count += 1
         self.log(f"Successfully generated {count} JSON files.")
 
-    # ---------------- TAB 3: INJECT ----------------
-    def setup_tab_inject(self, tab):
-        ttk.Label(tab, text="Safely inject translated JSON text back into original .bss files", font=("Helvetica", 10, "italic")).pack(anchor='w', pady=(0, 10))
+    def setup_tab_inject(self):
+        tab = self.tabview.tab("3. JSON to BSS")
+        ctk.CTkLabel(tab, text="Safely inject translated JSON text back into original .bss files", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=20, pady=(10, 10))
         
-        ttk.Label(tab, text="Original .bss Folder:").pack(anchor='w')
-        self.t3_bss = ttk.Entry(tab, width=60)
-        self.t3_bss.pack(anchor='w', pady=2)
-        ttk.Button(tab, text="Browse", command=lambda: self.browse_folder(self.t3_bss)).pack(anchor='w')
+        self.t3_bss = ctk.CTkEntry(tab, placeholder_text="Original .bss Folder", width=300)
+        self.t3_bss.pack(pady=2)
+        ctk.CTkButton(tab, text="Browse BSS", command=lambda: self.browse_folder(self.t3_bss)).pack(pady=2)
         
-        ttk.Label(tab, text="Translated .json Folder:").pack(anchor='w')
-        self.t3_json = ttk.Entry(tab, width=60)
-        self.t3_json.pack(anchor='w', pady=2)
-        ttk.Button(tab, text="Browse", command=lambda: self.browse_folder(self.t3_json)).pack(anchor='w')
+        self.t3_json = ctk.CTkEntry(tab, placeholder_text="Translated .json Folder", width=300)
+        self.t3_json.pack(pady=2)
+        ctk.CTkButton(tab, text="Browse JSON", command=lambda: self.browse_folder(self.t3_json)).pack(pady=2)
         
-        ttk.Label(tab, text="Output Folder (For patched .bss files):").pack(anchor='w')
-        self.t3_out = ttk.Entry(tab, width=60)
-        self.t3_out.pack(anchor='w', pady=2)
-        ttk.Button(tab, text="Browse", command=lambda: self.browse_folder(self.t3_out)).pack(anchor='w')
+        self.t3_out = ctk.CTkEntry(tab, placeholder_text="Output Patched .bss Folder", width=300)
+        self.t3_out.pack(pady=2)
+        ctk.CTkButton(tab, text="Browse Output", command=lambda: self.browse_folder(self.t3_out)).pack(pady=2)
         
-        ttk.Button(tab, text="Inject Bytecode", command=self.run_inject, width=20).pack(pady=15)
+        ctk.CTkButton(tab, text="▶ Inject Bytecode", command=self.run_inject, fg_color="purple", hover_color="darkmagenta").pack(pady=10)
 
     def run_inject(self):
         bss_dir, json_dir, out_dir = self.t3_bss.get(), self.t3_json.get(), self.t3_out.get()
@@ -205,35 +185,31 @@ class BgiToolkitApp(tk.Tk):
             
             for item in translations:
                 if item["original"] == item["translated"]: continue
-                offset = item["offset"]
-                orig_len = len(item["original"].encode('shift_jis'))
+                offset, orig_len = item["offset"], len(item["original"].encode('shift_jis'))
                 try: trans_bytes = item["translated"].encode('shift_jis', errors='replace')
                 except: trans_bytes = item["translated"].encode('utf-8', errors='ignore')
                 
                 if len(trans_bytes) < orig_len: trans_bytes = trans_bytes.ljust(orig_len, b'\x20')
                 elif len(trans_bytes) > orig_len: trans_bytes = trans_bytes[:orig_len]
-                
                 data[offset:offset+orig_len] = trans_bytes
             
             with open(os.path.join(out_dir, os.path.basename(bss_file)), "wb") as outf: outf.write(data)
             count += 1
         self.log(f"Safely patched {count} BSS files with auto-padding.")
 
-    # ---------------- TAB 4: REPACK ----------------
-    def setup_tab_pack(self, tab):
-        ttk.Label(tab, text="Compile patched files into a fresh BURIKO ARC20 archive", font=("Helvetica", 10, "italic")).pack(anchor='w', pady=(0, 10))
+    def setup_tab_pack(self):
+        tab = self.tabview.tab("4. ARC Repacker")
+        ctk.CTkLabel(tab, text="Compile patched files into a fresh BURIKO ARC20 archive", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=20, pady=(10, 20))
         
-        ttk.Label(tab, text="Input Folder (Patched .bss / Assets):").pack(anchor='w')
-        self.t4_in = ttk.Entry(tab, width=60)
-        self.t4_in.pack(anchor='w', pady=2)
-        ttk.Button(tab, text="Browse", command=lambda: self.browse_folder(self.t4_in)).pack(anchor='w', pady=(0, 10))
+        self.t4_in = ctk.CTkEntry(tab, placeholder_text="Input Folder (Patched .bss / Assets)", width=400)
+        self.t4_in.pack(pady=5)
+        ctk.CTkButton(tab, text="Browse Folder", command=lambda: self.browse_folder(self.t4_in)).pack(pady=5)
         
-        ttk.Label(tab, text="Output ARC File (e.g. data01099.arc.new):").pack(anchor='w')
-        self.t4_out = ttk.Entry(tab, width=60)
-        self.t4_out.pack(anchor='w', pady=2)
-        ttk.Button(tab, text="Browse", command=lambda: self.browse_file(self.t4_out, save=True, ext=".arc.new")).pack(anchor='w', pady=(0, 10))
+        self.t4_out = ctk.CTkEntry(tab, placeholder_text="Output ARC File (e.g. data01099.arc.new)", width=400)
+        self.t4_out.pack(pady=(15, 5))
+        ctk.CTkButton(tab, text="Browse File", command=lambda: self.browse_file(self.t4_out, save=True, ext=".arc.new")).pack(pady=5)
         
-        ttk.Button(tab, text="Build Archive", command=self.run_pack, width=20).pack(pady=20)
+        ctk.CTkButton(tab, text="▶ Build Archive", command=self.run_pack, fg_color="#C85000", hover_color="#963C00").pack(pady=30)
 
     def run_pack(self):
         indir, outfile = self.t4_in.get(), self.t4_out.get()
@@ -248,20 +224,14 @@ class BgiToolkitApp(tk.Tk):
             
             data_offset = 0
             for file_path in files:
-                file_name = os.path.basename(file_path)
                 file_size = os.path.getsize(file_path)
-                name_padded = file_name.encode("shift_jis")[:96].ljust(96, b'\x00')
-                
-                arc_file.write(name_padded)
-                arc_file.write(data_offset.to_bytes(4, "little"))
-                arc_file.write(file_size.to_bytes(4, "little"))
-                arc_file.write(b'\x00' * 24)
+                name_padded = os.path.basename(file_path).encode("shift_jis")[:96].ljust(96, b'\x00')
+                arc_file.write(name_padded + data_offset.to_bytes(4, "little") + file_size.to_bytes(4, "little") + b'\x00' * 24)
                 data_offset += file_size
                 
             for file_path in files:
-                with open(file_path, "rb") as f:
-                    arc_file.write(f.read())
-        self.log(f"Archive successfully packed: {os.path.basename(outfile)}")
+                with open(file_path, "rb") as f: arc_file.write(f.read())
+        self.log(f"Archive packed: {os.path.basename(outfile)}")
 
 if __name__ == "__main__":
     app = BgiToolkitApp()
