@@ -462,10 +462,37 @@ class BGIExtractorApp(ctk.CTk):
         ctk.CTkButton(frame, text="Initialize Build Engine", command=self.run_pack, width=200, height=40, font=ctk.CTkFont(weight="bold")).pack(pady=10)
 
     def run_pack(self):
+        import struct
         indir, outfile = self.t4_in.get(), self.t4_out.get()
         if not indir or not outfile: return
         self.log("Assembling binary archive structure...")
-        files = sorted([os.path.join(indir, f) for f in os.listdir(indir) if os.path.isfile(os.path.join(indir, f))])
+        
+        basenames = [f for f in os.listdir(indir) if os.path.isfile(os.path.join(indir, f))]
+        
+        ref_arc = self.t4_ref.get()
+        if ref_arc and os.path.isfile(ref_arc):
+            try:
+                order = []
+                with open(ref_arc, "rb") as f:
+                    if f.read(12) == b"BURIKO ARC20":
+                        count = struct.unpack("<I", f.read(4))[0]
+                        for _ in range(count):
+                            order.append(f.read(96).split(b"\x00")[0].decode("shift_jis"))
+                            f.read(32)
+                # Sort files according to original ARC order
+                files = []
+                for name in order:
+                    if name in basenames:
+                        files.append(os.path.join(indir, name))
+                        basenames.remove(name)
+                # Append any remaining files not in the original ARC
+                files.extend(sorted([os.path.join(indir, f) for f in basenames]))
+                self.log("Original file ordering applied from reference ARC.")
+            except Exception as e:
+                self.log(f"Failed to read reference ARC: {e}")
+                files = sorted([os.path.join(indir, f) for f in basenames])
+        else:
+            files = sorted([os.path.join(indir, f) for f in basenames])
         with open(outfile, "wb") as arc_file:
             arc_file.write(b"BURIKO ARC20")
             arc_file.write(len(files).to_bytes(4, "little"))
