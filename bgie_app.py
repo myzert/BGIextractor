@@ -7,6 +7,7 @@ import tempfile
 import shutil
 import re
 from PIL import Image
+from deep_translator import GoogleTranslator
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -64,7 +65,8 @@ class TranslationEditor(ctk.CTkToplevel):
         header_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
         
         ctk.CTkLabel(header_frame, text=f"File: {self.target_file}", font=ctk.CTkFont(weight="bold", size=16)).pack(side="left")
-        ctk.CTkButton(header_frame, text="Export as JSON", command=self.save_json, fg_color="#28a745", hover_color="#218838").pack(side="right")
+        ctk.CTkButton(header_frame, text="Export as JSON", command=self.save_json, fg_color="#28a745", hover_color="#218838").pack(side="right", padx=(10, 0))
+        ctk.CTkButton(header_frame, text="Auto-Translate All (ID)", command=self.auto_translate, fg_color="#3B8ED0", hover_color="#1F6AA5").pack(side="right")
         
         if not self.strings:
             ctk.CTkLabel(self, text="No translatable dialogue found in this file.").grid(row=1, column=0)
@@ -82,6 +84,23 @@ class TranslationEditor(ctk.CTkToplevel):
             trans_entry.insert("1.0", item["translated"])
             trans_entry.grid(row=idx, column=1, padx=10, pady=10, sticky="ew")
             self.entries.append(trans_entry)
+
+    def auto_translate(self):
+        def task():
+            try:
+                translator = GoogleTranslator(source='ja', target='id')
+                for idx, item in enumerate(self.strings):
+                    text = item["original"]
+                    if len(text.strip()) > 0:
+                        try:
+                            result = translator.translate(text)
+                            self.entries[idx].delete("1.0", "end")
+                            self.entries[idx].insert("1.0", result)
+                        except: pass
+                messagebox.showinfo("Success", "Auto-Translation finished!")
+            except Exception as e:
+                messagebox.showerror("Translation Error", str(e))
+        threading.Thread(target=task).start()
 
     def save_json(self):
         for idx, entry in enumerate(self.entries):
