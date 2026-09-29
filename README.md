@@ -7,6 +7,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](#)
 [![Theme](https://img.shields.io/badge/UI-CustomTkinter-blueviolet)](#)
+[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fmyzert%2FBGIextractor&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=visitors&edge_flat=false)](https://hits.seeyoufarm.com)
 
 *A comprehensive open-source toolset for BGI / Ethornell Engine modding and localization.*
 
@@ -21,7 +22,7 @@
 - [Installation](#installation)
 - [Usage Guide](#usage-guide)
 - [Technical Constraints](#technical-constraints)
-- [Contributing](#contributing)
+- [Contributors](#contributors)
 - [License](#license)
 
 ## About the Project
@@ -78,10 +79,15 @@ Standalone executables are automatically generated via GitHub Actions. Python in
 > **Bytecode Offset Limitations**
 > The engine is strictly constrained by original bytecode allocation. If a translated string is shorter than the source text, the application automatically pads it with spaces (`\x20`). Conversely, if a translation exceeds the original length, it will be **truncated**. Localization teams are advised to adhere to length limitations to maintain stability.
 
-## Contributing
+## Contributors
 
-We welcome contributions from the community. To submit a patch or feature:
+We welcome contributions from the community. A special thanks to all developers and localizers who have contributed to this project:
 
+<a href="https://github.com/myzert/BGIextractor/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=myzert/BGIextractor" alt="Contributors" />
+</a>
+
+To submit a patch or feature:
 1. Fork the Repository.
 2. Create a Feature Branch (`git checkout -b feature/ImplementationName`).
 3. Commit your changes (`git commit -m 'feat: Add ImplementationName'`).
