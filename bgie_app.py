@@ -172,7 +172,11 @@ class BGIExtractorApp(ctk.CTk):
     def run_extract(self):
         arc_file, out_dir = self.tv_arc.get(), self.tv_out.get()
         if not arc_file or not out_dir: return messagebox.showerror("Error", "Directories unassigned.")
-        exe_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ethornell.exe" if os.name == 'nt' else "./ethornell_linux")
+        import sys
+        base_path = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+        exe_path = os.path.join(base_path, "src", "ethornell.exe" if os.name == 'nt' else "ethornell_linux")
+        if not os.path.exists(exe_path):
+            exe_path = os.path.join(base_path, "ethornell.exe" if os.name == 'nt' else "ethornell_linux")
         def task():
             self.log(f"Initiating DSC decryption for {os.path.basename(arc_file)}...")
             os.makedirs(out_dir, exist_ok=True)

@@ -31,7 +31,7 @@ int bse_decrypt(uint8_t * crypted)
 	
 	for(counter = 0;counter < 64;counter++)
 	{
-		int target = NULL;
+		int target = 0;
 		int s, k;
 		int r = bse_rand(&hash);
 		int i = r & 0x3F;

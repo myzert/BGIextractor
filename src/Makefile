@@ -1,6 +1,6 @@
 FILES=main.c arc.c dsc.c cbg.c bse.c decrypt.c write.c
 OPTS=-Wall -ansi -pedantic -Wno-unused-result -O2
-LIBS=-lpng
+LIBS=
 
 all:
 	gcc -o ethornell $(OPTS) $(FILES) $(LIBS)
