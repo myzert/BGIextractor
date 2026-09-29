@@ -80,12 +80,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: "🔥 BGIE Pro - Latest Auto-Build"
+          name: "BGIE Pro - Latest Auto-Build"
           body: |
-            ## 🚀 BGIE (BGI Extractor) Pro
+            ## BGIE (BGI Extractor) Pro
             This release is automatically compiled by GitHub Actions.
             
-            ### 📥 Downloads:
+            ### Downloads:
             - **Windows**: Download `BGIExtractor-Win64.exe` below. It is a portable standalone executable (no installation required).
             - **Linux**: Download `bgiextractor_1.0.0_amd64.deb` below and install it using `sudo dpkg -i bgiextractor_1.0.0_amd64.deb`.
           files: |
