@@ -16,7 +16,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install customtkinter pyinstaller pillow
+        pip install customtkinter pyinstaller pillow deep-translator
     - name: Build Standalone EXE
       run: |
         pyinstaller --noconfirm --onefile --windowed --name "BGIExtractor-Win64" --add-data "src;src" bgie_app.py
@@ -37,7 +37,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install customtkinter pyinstaller pillow
+        pip install customtkinter pyinstaller pillow deep-translator
     - name: Build Linux Binary
       run: |
         pyinstaller --noconfirm --onefile --windowed --name "bgiextractor" --add-data "src:src" bgie_app.py
