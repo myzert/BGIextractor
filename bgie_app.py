@@ -15,10 +15,16 @@ ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
 def is_dialog(text):
-    if len(text) < 5 or ".bss" in text or ".mpg" in text or text.isupper(): return False
-    if "_" in text and " " not in text: return False
-    if " " not in text and not re.search(r'[a-z]', text): return False
-    if any(0x3040 <= ord(c) <= 0x309F for c in text): return False
+    import re
+    if len(text) < 2: return False
+    if re.search(r'\.(bmp|png|jpg|jpeg|ogg|wav|mp3|mpg|bss|arc|csv)$', text, re.IGNORECASE): return False
+    if re.match(r'^[A-Za-z0-9_]+$', text) and '_' in text: return False
+    if text.isupper() and re.match(r'^[A-Z0-9_ ]+$', text): return False
+    if text.startswith(('@', '#', '$', '%', 'sys_', 'Sys_', 'se_', 'bgm_', 'bg_')): return False
+    
+    # Check if purely ascii with no spaces (likely a variable)
+    if re.match(r'^[A-Za-z0-9]+$', text): return False
+    
     return True
 
 class TranslationEditor(ctk.CTkToplevel):
