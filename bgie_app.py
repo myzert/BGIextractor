@@ -469,7 +469,7 @@ class BGIExtractorApp(ctk.CTk):
         with open(outfile, "wb") as arc_file:
             arc_file.write(b"BURIKO ARC20")
             arc_file.write(len(files).to_bytes(4, "little"))
-            data_offset = 0
+            data_offset = 16 + (len(files) * 128)
             for file_path in files:
                 file_size = os.path.getsize(file_path)
                 name_padded = os.path.basename(file_path).encode("shift_jis")[:96].ljust(96, b'\x00')
