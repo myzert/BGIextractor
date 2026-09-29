@@ -1,52 +1,58 @@
-# BGI Engine Translation Toolkit (Ethornell)
+<div align="center">
+  <h1>BGIE (BGI Extractor) Pro</h1>
+  <p><b>The Ultimate Open-Source Toolset for SMEE / Ethornell Visual Novel Modding</b></p>
+</div>
 
-A comprehensive, cross-platform, open-source toolkit designed to unpack, translate, and repack visual novels running on the **BGI / Ethornell Engine** (commonly used by SMEE, ASa Project, August, etc.).
+## 📌 Overview
 
-This project was built to empower the Linux and Windows visual novel translation communities.
+**BGIE** (formerly BGI Translation Toolkit) is a comprehensive, cross-platform software suite designed to unpack, translate, and repack visual novels running on the **BGI / Ethornell Engine**. 
 
-## 🌟 Features
+Whether you are a solo translator or a localization team, this tool is built to handle the complex structure of BGI's `.arc` archives, circumventing the notorious `DSC FORMAT 1.00.` encryption, extracting `.CBG` visual assets, and providing a **safe, crash-proof text injection mechanism** for bytecode editing.
 
-- **Full GUI Support:** Includes a user-friendly Graphical User Interface (`bgi_toolkit.py`) built with Tkinter.
-- **ARC Extractor & DSC Decryptor:** C-based fast extractor (`src/`) capable of decrypting `DSC FORMAT 1.00.` obfuscation and extracting `CBG`/`PBG` image assets.
-- **Smart BSS ↔ JSON Converter:** Automatically identifies dialogue strings within compiled bytecode (`.bss` / `.bgi`) and exports them to human-readable JSON files, ignoring engine opcodes.
-- **Safe Bytecode Injector:** Injects translated strings back into the bytecode. It features a robust auto-padding/truncation mechanism to ensure the file size and byte offsets remain identical, preventing the game engine from crashing.
-- **ARC20 Repacker (Builder):** Packs your modified `.bss` and assets back into a `BURIKO ARC20` format archive ready to be loaded by the game.
+## 🌟 Key Features
 
-## 📦 Project Structure
+- **Built-in Archive Viewer:** Read the internal headers and list all files inside `.arc` archives before extracting them, just like standard archiving tools.
+- **Modern GUI Client:** Powered by `CustomTkinter`, BGIE features a sleek, dark-themed user interface running seamlessly on Windows, Linux, and macOS without the need for a terminal.
+- **DSC Decryption Engine:** Includes the blazing-fast C-based `ethornell` engine source code that rips through obfuscated scripts and decompresses BGI assets.
+- **Smart BSS ↔ JSON Converter:** Avoid messing with hex editors! The tool automatically isolates English/Japanese dialog strings from compiled `.bss` bytecode and exports them into clean `.json` arrays.
+- **Bytecode Auto-Padding Injector:** Re-insert translated text safely. BGIE meticulously adjusts string sizes and applies byte-padding so that internal engine memory pointers remain perfectly intact (Anti-Crash Guarantee).
+- **BURIKO ARC20 Compiler:** Build fresh `.arc` patches in a single click, ready to be recognized by the game engine.
 
-- `bgi_toolkit.py` - The main Python GUI application.
-- `bgi_extractor.py` - Standalone Python CLI for ARC extraction.
-- `ethornell_linux` - Pre-compiled binary for Linux to extract ARC and decrypt DSC files.
-- `src/` - The complete C source code for the ARC reader/extractor (to compile for Windows, Linux, or macOS).
-- `LICENSE` - GNU GPLv3 License.
+## 🚀 How to Launch
 
-## 🚀 How to Use (GUI)
+**Prerequisites:** 
+- Python 3.8+ installed.
 
-**Prerequisites:** Python 3.x installed.
+### On Windows
+Just double-click **`Launcher.bat`**. It will automatically install the UI dependencies and launch the beautiful graphical interface instantly.
 
-1. Open your terminal or command prompt.
-2. Run the application:
-   ```bash
-   python3 bgi_toolkit.py
-   ```
-3. **Tab 1 (BSS to JSON):** Select your folder containing decrypted `.bss` files. The tool will output `.json` files containing the English/Japanese text.
-4. **Translate:** Open the `.json` files in any text editor or pass them to an automatic translator. Translate the text inside the `"translated"` field.
-5. **Tab 2 (JSON to BSS):** Select the original `.bss` folder and your newly translated `.json` folder. The tool will safely inject your translations into new `.bss` files.
-6. **Tab 3 (Build ARC):** Select the folder containing your injected `.bss` files and specify the output filename (e.g., `data01099.arc.new`). Drop this new ARC file into your game's `Archive` folder (ensure it has the highest priority number).
+### On Linux / macOS
+Open a terminal in the folder and run:
+```bash
+./Launcher.sh
+```
 
-## 🛠 Compiling the Extractor
+## 🛠 Features Walkthrough
 
-If you wish to compile the `ethornell` C-based extractor yourself (required for Windows `.exe`):
+1. **ARC Viewer & Extractor:** Browse for an `.arc` file to peek at its files, or pick an output folder and hit *Extract All* to unpack and decrypt the contents.
+2. **Text to JSON:** Found `.bss` scripts? Run them through this tab to instantly generate `.json` files containing all the translatable dialogs.
+3. **JSON Injector:** Once your JSONs are translated, point this tool at the original `.bss` files and your translated `.json` folder. BGIE will generate brand new patched `.bss` files.
+4. **ARC Builder:** Compile your patched `.bss` scripts or edited images back into an `.arc` file (like `data01099.arc.new`).
 
+## 👨‍💻 Source Code & Compilation
+
+Unlike closed-source extraction tools (like older builds of GARbro), **BGIE is completely open-source**.
+
+Inside the `src/` directory, you will find the complete C source code for the core DSC decryptor and BURIKO ARC extractor.
+
+To compile it yourself on Linux:
 ```bash
 cd src
 make
 ```
-*(Requires `gcc` and `libpng-dev`)*
 
-## 📜 License
+To compile on Windows, you can use MinGW or MSVC.
 
-This project is licensed under the **GNU General Public License v3.0 (GPLv3)**. You are free to modify, distribute, and use it to help localize visual novels, provided you keep the software open-source.
+## 📄 License
 
----
-*Happy Translating!*
+BGIE is distributed under the **GNU General Public License v3.0 (GPLv3)**. You are free to modify, distribute, and contribute to this project to help localize visual novels worldwide!
